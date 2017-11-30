@@ -1,0 +1,136 @@
+
+Model......
+
+
+function sendEmail($to_email)
+	{
+		$from_email = 'omehdavid@mygmail.com';
+		$subject = 'Verify Your Email Address';
+		$message = 'Dear User,<br /><br />Please click on the below activation link to verify your email address.<br /><br /> http://www.royalgoldclubs.com/users/index/' . md5($to_email) . '<br /><br /><br />Thanks<br />Royal Gold Clubs Team';
+		
+		//configure email settings
+		$config['protocol'] = 'smtp';
+		$config['smtp_host'] = 'ssl://smtp.gmail.com'; //smtp host name
+		$config['smtp_port'] = '465'; //smtp port number
+		$config['smtp_user'] = $from_email;
+		$config['smtp_pass'] = 'Tosilo40'; //$from_email password
+		$config['mailtype'] = 'html';
+		$config['charset'] = 'iso-8859-1';
+		$config['wordwrap'] = TRUE;
+		$config['newline'] = "\r\n"; //use double quotes
+		$this->email->initialize($config);
+		
+		//send mail
+		$this->email->from($from_email, 'RoyalGold');
+		$this->email->to($to_email);
+		$this->email->subject($subject);
+		$this->email->message($message);
+		return $this->email->send();
+	}
+	
+	//activate user account
+	function verifyEmailID($key)
+	{
+		$data = array('status' => 1);
+		$this->db->where('md5(email)', $key);
+		return $this->db->update('users', $data);
+	}
+	
+}
+
+
+
+Controller...
+
+public function registration()
+	{
+	
+		// load form helper and validation library
+		//$this->load->helper('form');
+		//$this->load->library('form_validation');
+		
+		// set validation rules
+		$this->form_validation->set_rules('name', 'Full Name', 'trim|required');
+		$this->form_validation->set_rules('address', 'Address', 'trim|required');
+		$this->form_validation->set_rules('phone', 'Phone Number', 'trim|required');
+		$this->form_validation->set_rules('email', 'Email', 'trim|required|valid_email|is_unique[users.email]');
+		$this->form_validation->set_rules('pword', 'Password', 'trim|required|min_length[6]');
+		$this->form_validation->set_rules('c_pword', 'Confirm Password', 'trim|required|min_length[6]|matches[pword]');
+		
+		if ($this->form_validation->run() === false) {
+
+			
+
+		
+			// validation not ok, send validation errors to the view
+			// validation not ok, send validation errors to the view
+		$meta['title'] = 'Registration';
+		$data['item']= ''; 
+		$this->layout_reg('frontend/users/registration', $meta,  $data);
+			
+		} else {
+			
+			// set variables from the form
+			$data['name'] = $this->input->post('name', true);
+			$data['address'] = $this->input->post('address', true);
+			$data['phone'] = $this->input->post('phone', true);
+			$data['email'] = $this->input->post('email', true);
+			$data['pword'] = md5($this->input->post('pword', true));
+
+			//$data['pword']   = $this->user_model->hash_password($pword);
+			
+
+			$data['date_reg'] = $this->input->post('date_reg', true);
+
+			$data['date_reg'] = date('Y-m-j H:i:s');
+
+
+			// $name = $this->input->post('name',true);
+			// $address = $this->input->post('address',true); 
+			// $phone = $this->input->post('phone',true);
+			// $email    = $this->input->post('email', true);
+			// $pword = $this->input->post('pword', true);
+			// $date_reg = $this->input->post('date_reg', true);
+
+
+				if(!empty($_FILES['photo'] ['name'])) {
+					$img_data = $this->user_model->uploadImage('photo');
+					$img_data == true || redirect(base_url().'users/registration', 'refresh');
+					$data['photo'] = $img_data['path'];
+				
+				}
+
+				
+			
+			//$c_pword = $this->input->post('c_pword', true);
+			
+		//	$saltid     = md5($email);
+      	//	$status     = 0;
+			if($this->db->insert('users', $data)){
+			//if ($this->user_model->create_user($name, $address, $phone, $photo, $email, $pword, $date_reg)) {
+
+			if ($this->user_model->sendEmail($this->input->post('email')))
+				{
+
+			//if($this->sendEmail($email, $saltid)){
+				
+				// user creation ok
+		
+		
+		$this->session->set_flashdata('success_message', '<center> <div class="alert alert-success text-center">You are Successfully Registered! Please confirm the mail sent to your Email-ID!!!</div> </center>');
+		$meta['title'] = 'Home';
+		$data['item']= ''; 
+		$this->layout('frontend/sell/home', $meta,  $data);
+				
+			} else {
+				
+				// user creation failed, this should never happen
+				$this->session->set_flashdata('error_message', 'There was a problem creating your new account. Please try again.');
+				
+				// send error to the view
+			
+		}
+}
+}
+}
+ 
